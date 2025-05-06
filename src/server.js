@@ -36,9 +36,19 @@ app.use(session(sessionConfig));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Routes
+// Root route handler
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to the Authentication API' });
+});
+
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/youtube', youtubeRoutes);
+
+// 404 handler for undefined routes
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
