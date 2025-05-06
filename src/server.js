@@ -53,30 +53,21 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// Connect to MongoDB and start server
-const connectAndStart = async (mongoUri, port = process.env.PORT || 3000) => {
+// Connect to MongoDB
+const connectDB = async () => {
   try {
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB');
-    
-    // Only start the server if not in test environment
-    if (process.env.NODE_ENV !== 'test') {
-      const server = app.listen(port, () => {
-        console.log(`Server is running on port ${port}`);
-      });
-      return server;
-    }
-    
-    return app;
   } catch (err) {
     console.error('MongoDB connection error:', err);
     throw err;
   }
 };
 
-// Only start the server if this file is run directly
-if (require.main === module) {
-  connectAndStart(process.env.MONGODB_URI);
+// Connect to database when deployed
+if (process.env.NODE_ENV !== 'test') {
+  connectDB();
 }
 
-module.exports = { app, connectAndStart }; 
+// Export the Express app for Vercel
+module.exports = app; 
