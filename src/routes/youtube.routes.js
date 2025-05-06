@@ -39,7 +39,14 @@ router.get('/auth/google/callback',
     if (req.query.error === 'access_denied') {
       return res.redirect('/api/youtube/auth/consent-error');
     }
-    res.redirect('/api/youtube/auth/success');
+
+    // Determine the base URL based on environment
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.PRODUCTION_URL
+      : process.env.DEVELOPMENT_URL;
+
+    // Redirect to success URL with the appropriate base URL
+    res.redirect(`${baseUrl}/api/youtube/auth/success`);
   }
 );
 
@@ -90,20 +97,36 @@ router.get('/auth/logout', requireGoogleAuth, async (req, res) => {
 // OAuth success and failure routes
 router.get('/auth/success', (req, res) => {
   if (!req.user) {
-    return res.redirect('/api/youtube/auth/failure');
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.PRODUCTION_URL
+      : process.env.DEVELOPMENT_URL;
+    return res.redirect(`${baseUrl}/api/youtube/auth/failure`);
   }
-  res.json({
-    message: 'Successfully authenticated with Google',
-    user: {
-      id: req.user.id,
-      email: req.user.email,
-      name: req.user.name
-    },
-    tokens: {
-      accessToken: req.user.accessToken,
-      refreshToken: req.user.refreshToken
-    }
-  });
+
+  // Determine the frontend URL based on environment
+  const frontendUrl = process.env.NODE_ENV === 'production'
+    ? process.env.PRODUCTION_URL
+    : process.env.DEVELOPMENT_URL;
+
+  // If it's an API request, return JSON
+  if (req.headers.accept && req.headers.accept.includes('application/json')) {
+    return res.json({
+      message: 'Successfully authenticated with Google',
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        name: req.user.name
+      },
+      tokens: {
+        accessToken: req.user.accessToken,
+        refreshToken: req.user.refreshToken
+      }
+    });
+  }
+
+  // If it's a browser request, redirect to frontend with token
+  const token = req.user.accessToken;
+  res.redirect(`${frontendUrl}?token=${token}`);
 });
 
 router.get('/auth/failure', (req, res) => {
