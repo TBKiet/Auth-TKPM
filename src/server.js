@@ -1,0 +1,82 @@
+// Load environment variables first
+require('dotenv').config();
+
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const session = require('express-session');
+const authRoutes = require('./routes/auth.routes');
+const youtubeRoutes = require('./routes/youtube.routes');
+const { passport } = require('./config/google.config');
+
+const app = express();
+
+// Create uploads directory if it doesn't exist
+const fs = require('fs');
+const uploadsDir = './uploads';
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
+// Middleware
+app.use(cors({
+  origin: process.env.CORS_ORIGIN
+}));
+app.use(express.json());
+
+// Configure session based on environment
+const sessionConfig = {
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false
+};
+
+// For testing, use a memory store
+if (process.env.NODE_ENV === 'test') {
+  const MemoryStore = require('memorystore')(session);
+  sessionConfig.store = new MemoryStore({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  });
+}
+
+app.use(session(sessionConfig));
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/youtube', youtubeRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
+});
+
+// Connect to MongoDB and start server
+const connectAndStart = async (mongoUri, port = process.env.PORT || 3000) => {
+  try {
+    await mongoose.connect(mongoUri);
+    console.log('Connected to MongoDB');
+    
+    // Only start the server if not in test environment
+    if (process.env.NODE_ENV !== 'test') {
+      const server = app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+      });
+      return server;
+    }
+    
+    return app;
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+    throw err;
+  }
+};
+
+// Only start the server if this file is run directly
+if (require.main === module) {
+  connectAndStart(process.env.MONGODB_URI);
+}
+
+module.exports = { app, connectAndStart }; 
