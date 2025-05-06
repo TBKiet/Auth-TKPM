@@ -62,5 +62,13 @@ if (process.env.NODE_ENV !== 'test') {
   connectDB();
 }
 
+// Start the server
+const PORT = process.env.PORT || 3000;
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
 // Export the Express app for Vercel
 module.exports = app; 

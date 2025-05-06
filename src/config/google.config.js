@@ -3,26 +3,34 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const GoogleUser = require('../models/google-user.model');
 
+// Get the appropriate redirect URI based on environment
+const getRedirectUri = () => {
+  return process.env.NODE_ENV === 'production'
+    ? process.env.GOOGLE_REDIRECT_URI_PROD
+    : process.env.GOOGLE_REDIRECT_URI_DEV;
+};
+
 // Check if environment variables are loaded
-if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLE_REDIRECT_URI) {
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
   console.error('Missing Google OAuth2 environment variables. Please check your .env file.');
   console.log('Current environment variables:', {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Missing',
-    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Missing',
-    GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI ? 'Set' : 'Missing'
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Missing'
   });
   process.exit(1);
 }
 
+const redirectUri = getRedirectUri();
 console.log('Google OAuth2 Configuration:');
 console.log('Client ID:', process.env.GOOGLE_CLIENT_ID);
-console.log('Redirect URI:', process.env.GOOGLE_REDIRECT_URI);
+console.log('Redirect URI:', redirectUri);
+console.log('Environment:', process.env.NODE_ENV);
 
 // Configure Google OAuth2
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
+  redirectUri
 );
 
 // Configure YouTube API
@@ -35,7 +43,7 @@ const youtube = google.youtube({
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_REDIRECT_URI,
+    callbackURL: redirectUri,
     scope: [
       'https://www.googleapis.com/auth/userinfo.profile',
       'https://www.googleapis.com/auth/userinfo.email',
