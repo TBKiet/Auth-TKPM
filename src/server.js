@@ -13,7 +13,8 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN
+  origin: process.env.CORS_ORIGIN || '*',
+  credentials: true
 }));
 app.use(express.json());
 
@@ -21,7 +22,11 @@ app.use(express.json());
 const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  }
 };
 
 // For testing, use a memory store
@@ -72,9 +77,9 @@ if (process.env.NODE_ENV !== 'test') {
   connectDB();
 }
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-if (process.env.NODE_ENV !== 'test') {
+// Start the server only if not in production (Vercel handles this)
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
