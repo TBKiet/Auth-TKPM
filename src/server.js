@@ -11,13 +11,6 @@ const { passport } = require('./config/google.config');
 
 const app = express();
 
-// Create uploads directory if it doesn't exist
-const fs = require('fs');
-const uploadsDir = './uploads';
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
-
 // Middleware
 app.use(cors({
   origin: process.env.CORS_ORIGIN

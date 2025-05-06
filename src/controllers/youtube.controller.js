@@ -2,15 +2,8 @@ const { youtube } = require('../config/google.config');
 const multer = require('multer');
 const path = require('path');
 
-// Configure multer for video upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -37,7 +30,10 @@ exports.uploadVideo = async (req, res) => {
     }
 
     const { title, description, tags } = req.body;
-    const videoPath = req.file.path;
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No video file provided' });
+    }
 
     const response = await youtube.videos.insert({
       part: 'snippet,status',
@@ -52,12 +48,9 @@ exports.uploadVideo = async (req, res) => {
         }
       },
       media: {
-        body: require('fs').createReadStream(videoPath)
+        body: req.file.buffer
       }
     });
-
-    // Clean up uploaded file
-    require('fs').unlinkSync(videoPath);
 
     res.json({
       message: 'Video uploaded successfully',
